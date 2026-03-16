@@ -1,0 +1,61 @@
+---
+export interface Props {
+  tier: string;
+  name: string;
+  price: string;
+  period: string;
+  annual?: string;
+  features: string[];
+  ctaText: string;
+  ctaHref?: string;
+  featured?: boolean;
+  disabled?: boolean;
+  badge?: string;
+}
+
+const {
+  tier,
+  name,
+  price,
+  period,
+  annual,
+  features,
+  ctaText,
+  ctaHref = '#subscribe',
+  featured = false,
+  disabled = false,
+  badge,
+} = Astro.props;
+
+const cardClasses = [
+  'pricing-card',
+  featured && 'pricing-card--featured',
+  disabled && 'pricing-card--disabled',
+].filter(Boolean).join(' ');
+
+const ctaClasses = [
+  'pricing-card__cta',
+  featured ? 'pricing-card__cta--primary' : disabled ? 'pricing-card__cta--disabled' : 'pricing-card__cta--secondary',
+].filter(Boolean).join(' ');
+---
+
+<div class={cardClasses}>
+  {badge && <span class="pricing-card__badge">{badge}</span>}
+  <div class="pricing-card__tier">{tier}</div>
+  <h3 class="pricing-card__name">{name}</h3>
+  <div class="pricing-card__price">{price} <span>/{period}</span></div>
+  {annual && <p class="pricing-card__annual">{annual}</p>}
+  <ul class="pricing-card__features" role="list" style={annual ? 'margin-top: var(--space-4);' : undefined}>
+    {features.map((feature) => (
+      <li class="pricing-card__feature">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3.5 3.5L13 5"/></svg>
+        {feature}
+      </li>
+    ))}
+  </ul>
+  {disabled ? (
+    <span class={ctaClasses}>{ctaText}</span>
+  ) : (
+    <a href={ctaHref} class={ctaClasses}>{ctaText}</a>
+  )}
+</div>

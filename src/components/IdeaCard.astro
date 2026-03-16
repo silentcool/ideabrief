@@ -1,0 +1,87 @@
+---
+export interface Props {
+  name?: string;
+  industry?: string;
+  score?: number;
+  verdict?: string;
+  pitch?: string;
+  tam?: string;
+  mvpCost?: string;
+  breakEvenCustomers?: string;
+}
+
+// Defaults fall back to TreeMind AI (static showcase)
+const {
+  name = 'TreeMind AI',
+  industry = 'Tree Services / Computer Vision',
+  score = 7.55,
+  verdict = 'Go with Conditions',
+  pitch = 'AI estimating platform using satellite imagery + computer vision to measure canopy size, assess species risk, and generate accurate job estimates before anyone leaves the shop.',
+  tam = '$680M',
+  mvpCost = '$70–100K',
+  breakEvenCustomers = '~180',
+} = Astro.props;
+
+const scorePercent = ((score / 10) * 100).toFixed(1);
+const verdictClass = verdict.toLowerCase().includes('go') && !verdict.toLowerCase().includes('no-go')
+  ? 'go'
+  : verdict.toLowerCase().includes('no-go')
+    ? 'no-go'
+    : 'conditions';
+const verdictLabel = verdict === 'Go with Conditions' ? 'Conditions' : verdict;
+---
+
+<article class="idea-card">
+  <div class="idea-card__header">
+    <div class="idea-card__title-group">
+      <h3 class="idea-card__name">{name}</h3>
+      <span class="idea-card__industry">{industry}</span>
+    </div>
+    <div class="idea-card__score-group">
+      <div class="idea-card__score">
+        <span class="idea-card__score-value" data-target={score.toFixed(2)}>{score.toFixed(2)}</span>
+        <span class="idea-card__score-label">/ 10</span>
+      </div>
+      <span class={`badge badge--${verdictClass}`}>{verdictLabel}</span>
+    </div>
+  </div>
+  <div class="idea-card__score-bar">
+    <div class="idea-card__score-fill" style={`--score-width: ${scorePercent}%;`}></div>
+  </div>
+  <div class="idea-card__body">
+    <div class="idea-card__section">
+      <div class="idea-card__label">60-Second Pitch</div>
+      <p class="idea-card__text">{pitch}</p>
+    </div>
+  </div>
+  <div class="idea-card__stats">
+    <div class="idea-card__stat">
+      <div class="idea-card__stat-value">{tam || '—'}</div>
+      <div class="idea-card__stat-label">TAM</div>
+    </div>
+    <div class="idea-card__stat">
+      <div class="idea-card__stat-value">{mvpCost || '—'}</div>
+      <div class="idea-card__stat-label">MVP Cost</div>
+    </div>
+    <div class="idea-card__stat">
+      <div class="idea-card__stat-value">{breakEvenCustomers || '—'}</div>
+      <div class="idea-card__stat-label">Break-even Customers</div>
+    </div>
+  </div>
+  <div class="idea-card__locked">
+    <div class="idea-card__locked-content" aria-hidden="true">
+      <p>Full validation report includes competitive moat analysis, revenue model breakdowns, action plans with validation contacts, unit economics deep dives, and investor pitch snapshots — all 11 modules.</p>
+    </div>
+    <div class="idea-card__lock-overlay">
+      <svg class="idea-card__lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+      <span class="idea-card__lock-text">Full validation report — 11 modules, competitive moats, revenue model, action plan</span>
+      <span class="idea-card__lock-tag">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 1l1.5 3 3.5.5-2.5 2.5.5 3.5L6 9 3 10.5l.5-3.5L1 4.5 4.5 4z"/></svg>
+        Unlock with Pro
+      </span>
+    </div>
+  </div>
+</article>

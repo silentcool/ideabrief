@@ -1,0 +1,345 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+export interface Props {
+  title: string;
+  description: string;
+  date: string;
+  tags?: string[];
+  coverImage?: string | null;
+  slug: string;
+}
+
+const { title, description, date, tags = [], coverImage, slug } = Astro.props;
+
+const formattedDate = new Date(date).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const canonicalUrl = `https://ideabrief.ai/blog/${slug}/`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: title,
+  description: description,
+  datePublished: date,
+  url: canonicalUrl,
+  author: {
+    '@type': 'Organization',
+    name: 'IdeaBrief',
+    url: 'https://ideabrief.ai',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'IdeaBrief',
+    url: 'https://ideabrief.ai',
+  },
+  creator: {
+    '@type': 'SoftwareApplication',
+    name: 'Perplexity Computer',
+    url: 'https://www.perplexity.ai/computer',
+  },
+  ...(coverImage ? { image: coverImage } : {}),
+  ...(tags.length > 0 ? { keywords: tags.join(', ') } : {}),
+};
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonical={canonicalUrl}
+  ogImage={coverImage || ''}
+  ogType="article"
+  article={{ publishedTime: date, tags }}
+  jsonLd={jsonLd}
+  currentPage="blog"
+>
+
+<article class="blog-post">
+  <div class="container blog-post__container">
+    <a href="/blog/" class="blog-post__back">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 8H3M7 4L3 8l4 4"/></svg>
+      Back to Blog
+    </a>
+
+    <header class="blog-post__header">
+      {tags.length > 0 && (
+        <div class="blog-post__tags">
+          {tags.map((tag) => (
+            <span class="badge">{tag}</span>
+          ))}
+        </div>
+      )}
+      <h1 class="blog-post__title">{title}</h1>
+      <time class="blog-post__date" datetime={date}>{formattedDate}</time>
+    </header>
+
+    {coverImage && (
+      <div class="blog-post__cover">
+        <img src={coverImage} alt={title} />
+      </div>
+    )}
+
+    <div class="blog-post__content prose">
+      <slot />
+    </div>
+
+    <footer class="blog-post__footer">
+      <div class="blog-post__cta">
+        <h3>Get AI-validated startup ideas in your inbox</h3>
+        <p>Every weekday, one idea. Validated. Builder-ready.</p>
+        <a href="/#subscribe" class="blog-post__cta-btn">Subscribe Free</a>
+      </div>
+    </footer>
+  </div>
+</article>
+
+</BaseLayout>
+
+<style is:global>
+  .blog-post__container {
+    max-width: 720px;
+    padding-block: var(--space-8);
+  }
+
+  .blog-post__back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    margin-bottom: var(--space-8);
+    transition: color var(--transition-interactive);
+  }
+
+  .blog-post__back:hover {
+    color: var(--color-primary);
+  }
+
+  .blog-post__back svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .blog-post__header {
+    margin-bottom: var(--space-8);
+  }
+
+  .blog-post__tags {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+  }
+
+  .blog-post__title {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.15;
+    margin-bottom: var(--space-4);
+  }
+
+  .blog-post__date {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-faint);
+  }
+
+  .blog-post__cover {
+    margin-bottom: var(--space-8);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+  }
+
+  .blog-post__cover img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── Prose styles for blog content ── */
+  .prose h1 {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-top: var(--space-10);
+    margin-bottom: var(--space-4);
+  }
+
+  .prose h2 {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-top: var(--space-8);
+    margin-bottom: var(--space-4);
+  }
+
+  .prose h3 {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-top: var(--space-6);
+    margin-bottom: var(--space-3);
+  }
+
+  .prose h4 {
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-2);
+  }
+
+  .prose p {
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+    line-height: 1.8;
+    margin-bottom: var(--space-5);
+  }
+
+  .prose a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color var(--transition-interactive);
+  }
+
+  .prose a:hover {
+    color: var(--color-primary-hover);
+  }
+
+  .prose strong {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+
+  .prose em {
+    font-style: italic;
+  }
+
+  .prose ul, .prose ol {
+    padding-left: var(--space-6);
+    margin-bottom: var(--space-5);
+  }
+
+  .prose li {
+    font-size: var(--text-base);
+    color: var(--color-text-muted);
+    line-height: 1.8;
+    margin-bottom: var(--space-2);
+  }
+
+  .prose blockquote {
+    border-left: 3px solid var(--color-primary);
+    padding-left: var(--space-5);
+    margin-left: 0;
+    margin-bottom: var(--space-5);
+  }
+
+  .prose blockquote p {
+    color: var(--color-text);
+    font-style: italic;
+  }
+
+  .prose pre {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    overflow-x: auto;
+    margin-bottom: var(--space-5);
+  }
+
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  .prose :not(pre) > code {
+    background: var(--color-surface-2);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    color: var(--color-primary);
+  }
+
+  .prose pre code {
+    color: var(--color-text-muted);
+    background: none;
+    padding: 0;
+  }
+
+  .prose img {
+    border-radius: var(--radius-lg);
+    margin-block: var(--space-6);
+    border: 1px solid var(--color-border);
+  }
+
+  .prose hr {
+    border: none;
+    border-top: 1px solid var(--color-divider);
+    margin-block: var(--space-8);
+  }
+
+  /* ── Blog post footer CTA ── */
+  .blog-post__footer {
+    margin-top: var(--space-12);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-divider);
+  }
+
+  .blog-post__cta {
+    text-align: center;
+    padding: var(--space-8);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+  }
+
+  .blog-post__cta h3 {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: var(--space-3);
+  }
+
+  .blog-post__cta p {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-5);
+  }
+
+  .blog-post__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    color: #0a0a0f;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    font-family: var(--font-display);
+    text-decoration: none;
+    transition: background var(--transition-interactive),
+                transform var(--transition-interactive),
+                box-shadow var(--transition-interactive);
+  }
+
+  .blog-post__cta-btn:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-glow);
+  }
+</style>

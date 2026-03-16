@@ -1,0 +1,209 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import SEO from '../components/SEO.astro';
+import '../styles/base.css';
+import '../styles/style.css';
+
+export interface Props {
+  title: string;
+  description: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: string;
+  article?: {
+    publishedTime?: string;
+    tags?: string[];
+    author?: string;
+  };
+  jsonLd?: Record<string, unknown>;
+  currentPage?: string;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogImage,
+  ogType,
+  article,
+  jsonLd,
+  currentPage = '',
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<!--
+   ______                            __
+  / ____/___  ____ ___  ____  __  __/ /____  _____
+ / /   / __ \/ __ `__ \/ __ \/ / / / __/ _ \/ ___/
+/ /___/ /_/ / / / / / / /_/ / /_/ / /_/  __/ /
+\____/\____/_/ /_/ /_/ .___/\__,_/\__/\___/_/
+                    /_/
+        Created with Perplexity Computer
+        https://www.perplexity.ai/computer
+-->
+
+<!-- Perplexity Computer Attribution — SEO Meta Tags -->
+<meta name="generator" content="Perplexity Computer">
+<meta name="author" content="Perplexity Computer">
+<meta property="og:see_also" content="https://www.perplexity.ai/computer">
+<link rel="author" href="https://www.perplexity.ai/computer">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<SEO
+  title={title}
+  description={description}
+  canonical={canonical}
+  ogImage={ogImage}
+  ogType={ogType}
+  article={article}
+  jsonLd={jsonLd}
+/>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+<!-- Favicon -->
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+
+<Header currentPage={currentPage} />
+
+<slot />
+
+<Footer />
+
+<script>
+  // app.ts — IdeaBrief Interactivity
+  (function () {
+    'use strict';
+
+    // Mark JS as loaded
+    document.documentElement.classList.add('js-loaded');
+
+    // ── Theme (default dark — this IS the dark site) ──
+    const root = document.documentElement;
+    if (!root.getAttribute('data-theme')) {
+      root.setAttribute('data-theme', 'dark');
+    }
+
+    // ── Scroll Reveal (JS fallback for browsers without scroll-driven animations) ──
+    const supportsScrollTimeline = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('animation-timeline: scroll()');
+
+    if (!supportsScrollTimeline) {
+      const reveals = document.querySelectorAll('.js-reveal');
+      if (reveals.length > 0) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+        );
+        reveals.forEach((el) => observer.observe(el));
+      }
+    }
+
+    // ── Score Bar Animation ──
+    const scoreBar = document.querySelector('.idea-card__score-fill');
+    if (scoreBar) {
+      const barObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              (scoreBar as HTMLElement).classList.add('animate');
+              barObserver.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.3 }
+      );
+      const card = scoreBar.closest('.idea-card');
+      if (card) barObserver.observe(card);
+    }
+
+    // ── Smooth Scroll for Anchor Links ──
+    document.querySelectorAll('a[href^="#"]').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        const href = (link as HTMLAnchorElement).getAttribute('href');
+        if (!href) return;
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // ── Header Scroll Behavior ──
+    const header = document.querySelector('.header') as HTMLElement | null;
+    if (header) {
+      window.addEventListener('scroll', () => {
+        const current = window.scrollY;
+        if (current > 80) {
+          header.style.boxShadow = 'var(--shadow-md)';
+        } else {
+          header.style.boxShadow = 'none';
+        }
+      }, { passive: true });
+    }
+
+    // ── Vault Card Stagger Animation ──
+    const vaultCards = document.querySelectorAll('.vault-card');
+    if (vaultCards.length > 0) {
+      const vaultObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const cards = entry.target.querySelectorAll('.vault-card');
+              cards.forEach((card, i) => {
+                (card as HTMLElement).style.opacity = '0';
+                (card as HTMLElement).style.transition = `opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${i * 60}ms`;
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    (card as HTMLElement).style.opacity = '1';
+                  });
+                });
+              });
+              vaultObserver.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      const vaultGrid = document.querySelector('.vault-grid');
+      if (vaultGrid) vaultObserver.observe(vaultGrid);
+    }
+
+    // ── Pricing Card Hover Glow (desktop only) ──
+    if (window.matchMedia('(hover: hover)').matches) {
+      document.querySelectorAll('.pricing-card:not(.pricing-card--disabled)').forEach((card) => {
+        card.addEventListener('mouseenter', () => {
+          if (!card.classList.contains('pricing-card--featured')) {
+            (card as HTMLElement).style.boxShadow = 'var(--shadow-md)';
+          }
+        });
+        card.addEventListener('mouseleave', () => {
+          if (!card.classList.contains('pricing-card--featured')) {
+            (card as HTMLElement).style.boxShadow = '';
+          }
+        });
+      });
+    }
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,255 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import IdeaCard from '../components/IdeaCard.astro';
+import PricingCard from '../components/PricingCard.astro';
+import VaultCard from '../components/VaultCard.astro';
+import { getValidatedIdeas, getFeaturedIdea } from '../lib/notion';
+
+// Fetch ideas dynamically from Notion
+const allIdeas = await getValidatedIdeas();
+const featuredIdea = await getFeaturedIdea();
+
+// Vault shows all ideas except the featured one (avoid duplication)
+const vaultIdeas = featuredIdea
+  ? allIdeas.filter((idea) => idea.id !== featuredIdea.id)
+  : allIdeas;
+
+const ideaCount = allIdeas.length;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'IdeaBrief',
+  url: 'https://ideabrief.ai',
+  description: 'Every weekday, one AI-validated startup idea. IdeaBrief runs ideas through an 11-module validation engine.',
+  creator: {
+    '@type': 'SoftwareApplication',
+    name: 'Perplexity Computer',
+    url: 'https://www.perplexity.ai/computer',
+  },
+};
+---
+
+<BaseLayout
+  title="IdeaBrief — AI-Validated Startup Ideas for Builders"
+  description="Every weekday, one AI-validated startup idea. IdeaBrief runs ideas through an 11-module validation engine — stress tests, market sizing, unit economics, competitive moats — so you don't waste months on bad ideas."
+  ogType="website"
+  jsonLd={jsonLd}
+>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<section class="hero section" id="hero">
+  <div class="hero__bg">
+    <div class="hero__grid"></div>
+  </div>
+  <div class="container hero__content">
+    <div class="hero__badge">
+      <span class="badge badge--glow">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><circle cx="6" cy="6" r="3"/></svg>
+        Powered by AI &bull; Validated daily &bull; Free to start
+      </span>
+    </div>
+    <h1 class="hero__title">
+      Every weekday, one<br><span class="text-gradient">AI-validated</span> startup idea.<br>
+      Built for builders who ship.
+    </h1>
+    <p class="hero__subtitle">
+      IdeaBrief runs every startup idea through an 11-module AI validation engine — stress tests, market sizing, unit economics, competitive moats — so you don't waste months on bad ideas.
+    </p>
+    <form class="email-form" action="mailto:michael@blackmatter.vc" method="post" enctype="text/plain" id="subscribe">
+      <input type="email" class="email-form__input" placeholder="your@email.com" required aria-label="Email address">
+      <button type="submit" class="email-form__btn">
+        Get the Free Brief
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </button>
+    </form>
+    <p class="hero__proof">Join <strong>0</strong> builders getting smarter about what to build</p>
+    <div class="hero__powered">
+      <span class="badge">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 1v3l2 1-2 1v3l-2-1 2-1-2-1V1l2 1z"/></svg>
+        11-module validation engine
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SAMPLE IDEA CARD ═══════════════════════ -->
+<section class="section sample-section fade-in js-reveal" id="sample">
+  <div class="container container--narrow">
+    <span class="section-label">Live Example</span>
+    <h2 class="section-title">Here's what a validated idea looks like</h2>
+    <p class="section-subtitle" style="margin-inline:auto;">Every brief is AI-scored, market-validated, and builder-ready. Here's one from the vault.</p>
+
+    {featuredIdea ? (
+      <IdeaCard
+        name={featuredIdea.name}
+        industry={featuredIdea.industry}
+        score={featuredIdea.score}
+        verdict={featuredIdea.verdict}
+        pitch={featuredIdea.pitch}
+        tam={featuredIdea.tam}
+        mvpCost={featuredIdea.mvpCost}
+        breakEvenCustomers={featuredIdea.breakEvenCustomers}
+      />
+    ) : (
+      <IdeaCard />
+    )}
+
+    <p class="sample-section__note">This is one of <strong>{ideaCount}+</strong> validated ideas already in the vault.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════ HOW IT WORKS ═══════════════════════ -->
+<section class="section fade-in js-reveal" id="how-it-works">
+  <div class="container">
+    <div style="text-align:center;">
+      <span class="section-label">Process</span>
+      <h2 class="section-title">How IdeaBrief Works</h2>
+      <p class="section-subtitle" style="margin-inline:auto;">From opportunity detection to build-ready brief, in three steps.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step__number">01</div>
+        <svg class="step__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+          <path d="M8 11h6M11 8v6"/>
+        </svg>
+        <h3 class="step__title">AI Scans for Opportunity</h3>
+        <p class="step__desc">Our engine identifies underserved US industries where AI SaaS can solve real pain — not hype, not trends, real operational friction worth paying to fix.</p>
+      </div>
+      <div class="step">
+        <div class="step__number">02</div>
+        <svg class="step__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="1"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+        <h3 class="step__title">11-Module Validation</h3>
+        <p class="step__desc">Stress test, market sizing, competitive moat, unit economics, MVP scope, GTM strategy, investor pitch — every angle, rigorously tested.</p>
+      </div>
+      <div class="step">
+        <div class="step__number">03</div>
+        <svg class="step__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <h3 class="step__title">You Build</h3>
+        <p class="step__desc">Pick the ideas that match your skills, market, and ambition. Get the validation data you need to start shipping with confidence, not guesswork.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ PRICING ═══════════════════════ -->
+<section class="section fade-in js-reveal" id="pricing">
+  <div class="container">
+    <div style="text-align:center;">
+      <span class="section-label">Pricing</span>
+      <h2 class="section-title">Choose Your Depth</h2>
+      <p class="section-subtitle" style="margin-inline:auto;">Start free. Go deep when you're ready to build.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <PricingCard
+        tier="Free"
+        name="The Brief"
+        price="$0"
+        period="forever"
+        features={[
+          'Daily idea teaser on X/Twitter',
+          'Weekly condensed newsletter',
+          'Problem + solution + score',
+          'Access to idea archive',
+        ]}
+        ctaText="Subscribe Free"
+        ctaHref="#subscribe"
+      />
+
+      <PricingCard
+        tier="Pro"
+        name="The Full Report"
+        price="$10"
+        period="month"
+        annual="or $99/year (save 17%)"
+        badge="Recommended"
+        featured={true}
+        features={[
+          'Everything in Free',
+          'Full 11-module validation reports',
+          'Competitive moat analysis',
+          'Revenue model breakdowns',
+          'MVP scope & build estimates',
+          'Unit economics deep dives',
+          'Investor pitch snapshots',
+        ]}
+        ctaText="Go Pro — $10/mo"
+        ctaHref="#subscribe"
+      />
+
+      <PricingCard
+        tier="Premium"
+        name="The Builder's Edge"
+        price="$29"
+        period="month"
+        annual="Coming Soon"
+        disabled={true}
+        features={[
+          'Everything in Pro',
+          'Source data & research links',
+          'Action plans with validation contacts',
+          'Private community access',
+          'Monthly live "Idea Teardown" sessions',
+        ]}
+        ctaText="Coming Soon"
+      />
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ IDEA VAULT ═══════════════════════ -->
+<section class="section fade-in js-reveal" id="vault">
+  <div class="container">
+    <div style="text-align:center;">
+      <span class="section-label">Idea Vault</span>
+      <h2 class="section-title">Validated Ideas in the Pipeline</h2>
+      <p class="section-subtitle" style="margin-inline:auto;">Each idea is AI-scored from 1–10 across 11 validation modules. Here's what's in the vault.</p>
+    </div>
+
+    <div class="vault-grid">
+      {vaultIdeas.length > 0 ? (
+        vaultIdeas.map((idea) => (
+          <VaultCard
+            name={idea.name}
+            industry={idea.industry}
+            pitch={idea.pitch}
+            score={String(idea.score)}
+            verdict={idea.verdict}
+          />
+        ))
+      ) : (
+        <p style="text-align:center; color: var(--color-text-muted); padding: var(--space-8) 0;">New ideas are generated every weekday. Check back soon.</p>
+      )}
+    </div>
+
+    <p class="vault-note">New idea every weekday. <strong>{ideaCount > 0 ? `${ideaCount} ideas and counting` : '250+ ideas per year'}</strong>.</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════ BOTTOM CTA ═══════════════════════ -->
+<section class="section bottom-cta fade-in js-reveal" id="bottom-cta">
+  <div class="bottom-cta__bg"></div>
+  <div class="container bottom-cta__content">
+    <h2 class="bottom-cta__title">Stop guessing.<br><span class="text-gradient">Start building.</span></h2>
+    <p class="bottom-cta__subtitle">Get one AI-validated startup idea in your inbox every weekday.</p>
+    <form class="email-form" action="mailto:michael@blackmatter.vc" method="post" enctype="text/plain">
+      <input type="email" class="email-form__input" placeholder="your@email.com" required aria-label="Email address">
+      <button type="submit" class="email-form__btn">
+        Get the Free Brief
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </button>
+    </form>
+    <p class="bottom-cta__note">Free forever. Upgrade when you're ready to go deep.</p>
+  </div>
+</section>
+
+</BaseLayout>

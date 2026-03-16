@@ -1,0 +1,27 @@
+---
+import BlogPostLayout from '../../layouts/BlogPost.astro';
+import { getPostBySlug } from '../../lib/notion';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/blog/');
+}
+
+const post = await getPostBySlug(slug);
+
+if (!post) {
+  return Astro.redirect('/blog/');
+}
+---
+
+<BlogPostLayout
+  title={post.title}
+  description={post.description}
+  date={post.date}
+  tags={post.tags}
+  coverImage={post.coverImage}
+  slug={post.slug}
+>
+  <Fragment set:html={post.content} />
+</BlogPostLayout>

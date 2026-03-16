@@ -345,30 +345,9 @@ export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
   console.log('[IdeaBrief] Fetching ideas from Notion DB:', IDEAS_DB_ID);
 
   try {
+    // First try a simple unfiltered query to verify access
     const response = await notion.databases.query({
       database_id: IDEAS_DB_ID,
-      filter: {
-        and: [
-          {
-            property: 'Verdict',
-            select: {
-              does_not_equal: 'No-Go',
-            },
-          },
-          {
-            property: 'Status',
-            select: {
-              does_not_equal: 'Passed',
-            },
-          },
-          {
-            property: 'Opportunity Score',
-            number: {
-              is_not_empty: true,
-            },
-          },
-        ],
-      },
       sorts: [
         {
           property: 'Opportunity Score',
@@ -377,18 +356,36 @@ export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
       ],
     });
 
-    console.log('[IdeaBrief] Notion returned', response.results.length, 'ideas');
+    console.log('[IdeaBrief] Notion returned', response.results.length, 'raw results');
 
     const ideas = response.results
       .filter((page): page is PageObjectResponse => 'properties' in page)
       .map(pageToIdea)
-      .filter((idea) => idea.name && idea.name !== 'InvoiceScan'); // Exclude InvoiceScan
+      .filter((idea) => {
+        // Exclude InvoiceScan
+        if (idea.name === 'InvoiceScan') return false;
+        // Exclude No-Go verdicts
+        if (idea.verdict === 'No-Go') return false;
+        // Exclude Passed status
+        if (idea.status === 'Passed') return false;
+        // Must have a score
+        if (!idea.score || idea.score === 0) return false;
+        // Must have a name
+        if (!idea.name) return false;
+        return true;
+      });
 
     console.log('[IdeaBrief] After filtering:', ideas.length, 'ideas');
+    if (ideas.length > 0) {
+      console.log('[IdeaBrief] First idea:', ideas[0].name, '- Score:', ideas[0].score);
+    }
     return ideas;
   } catch (error: any) {
-    console.error('[IdeaBrief] Error fetching ideas from Notion:', error?.code, error?.message);
-    if (error?.body) console.error('[IdeaBrief] Error body:', error.body);
+    console.error('[IdeaBrief] Error fetching ideas from Notion.');
+    console.error('[IdeaBrief] Error code:', error?.code);
+    console.error('[IdeaBrief] Error message:', error?.message);
+    console.error('[IdeaBrief] Error status:', error?.status);
+    console.error('[IdeaBrief] Full error:', JSON.stringify(error, null, 2));
     return [];
   }
 }

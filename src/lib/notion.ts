@@ -336,9 +336,13 @@ export async function getAllPostSlugs(): Promise<string[]> {
  */
 export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
   if (!IDEAS_DB_ID || !import.meta.env.NOTION_TOKEN) {
-    console.warn('Notion ideas credentials not configured. Returning empty ideas.');
+    console.warn('[IdeaBrief] Notion ideas credentials not configured.');
+    console.warn('[IdeaBrief] IDEAS_DB_ID:', IDEAS_DB_ID ? 'SET' : 'MISSING');
+    console.warn('[IdeaBrief] NOTION_TOKEN:', import.meta.env.NOTION_TOKEN ? 'SET' : 'MISSING');
     return [];
   }
+
+  console.log('[IdeaBrief] Fetching ideas from Notion DB:', IDEAS_DB_ID);
 
   try {
     const response = await notion.databases.query({
@@ -373,12 +377,18 @@ export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
       ],
     });
 
-    return response.results
+    console.log('[IdeaBrief] Notion returned', response.results.length, 'ideas');
+
+    const ideas = response.results
       .filter((page): page is PageObjectResponse => 'properties' in page)
       .map(pageToIdea)
       .filter((idea) => idea.name && idea.name !== 'InvoiceScan'); // Exclude InvoiceScan
-  } catch (error) {
-    console.error('Error fetching ideas from Notion:', error);
+
+    console.log('[IdeaBrief] After filtering:', ideas.length, 'ideas');
+    return ideas;
+  } catch (error: any) {
+    console.error('[IdeaBrief] Error fetching ideas from Notion:', error?.code, error?.message);
+    if (error?.body) console.error('[IdeaBrief] Error body:', error.body);
     return [];
   }
 }

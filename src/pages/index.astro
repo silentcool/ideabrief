@@ -8,8 +8,16 @@ import VaultCard from '../components/VaultCard.astro';
 import { getValidatedIdeas, getFeaturedIdea } from '../lib/notion';
 
 // Fetch ideas dynamically from Notion
-const allIdeas = await getValidatedIdeas();
-const featuredIdea = await getFeaturedIdea();
+let allIdeas = [];
+let featuredIdea = null;
+let debugInfo = '';
+try {
+  allIdeas = await getValidatedIdeas();
+  featuredIdea = await getFeaturedIdea();
+  debugInfo = `OK: ${allIdeas.length} ideas loaded`;
+} catch (err: any) {
+  debugInfo = `ERROR: ${err?.code} ${err?.message} ${err?.status}`;
+}
 
 // Vault shows all ideas except the featured one (avoid duplication)
 const vaultIdeas = featuredIdea
@@ -234,6 +242,7 @@ const jsonLd = {
     </div>
 
     <p class="vault-note">New idea every weekday. <strong>{ideaCount > 0 ? `${ideaCount} ideas and counting` : '250+ ideas per year'}</strong>.</p>
+    <!-- DEBUG: {debugInfo} -->
   </div>
 </section>
 

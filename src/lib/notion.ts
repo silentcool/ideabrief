@@ -5,16 +5,36 @@ import type {
   RichTextItemResponse,
 } from '@notionhq/client/build/src/api-endpoints';
 
-// Initialize Notion client
-const notion = new Client({
-  auth: import.meta.env.NOTION_TOKEN,
-});
+// Lazy-initialized Notion client — env vars may not be available at module load time
+let _notion: Client | null = null;
+let _n2m: NotionToMarkdown | null = null;
 
-const n2m = new NotionToMarkdown({ notionClient: notion });
+function getNotionToken(): string {
+  return import.meta.env.NOTION_TOKEN || process.env.NOTION_TOKEN || '';
+}
 
-// Database IDs from environment
-const BLOG_DB_ID = import.meta.env.NOTION_BLOG_DB;
-const IDEAS_DB_ID = import.meta.env.NOTION_IDEAS_DB;
+function getNotionClient(): Client {
+  if (!_notion) {
+    _notion = new Client({ auth: getNotionToken() });
+  }
+  return _notion;
+}
+
+function getN2M(): NotionToMarkdown {
+  if (!_n2m) {
+    _n2m = new NotionToMarkdown({ notionClient: getNotionClient() });
+  }
+  return _n2m;
+}
+
+// Database IDs from environment (lazy)
+function getIdeasDbId(): string {
+  return import.meta.env.NOTION_IDEAS_DB || process.env.NOTION_IDEAS_DB || '';
+}
+
+function getBlogDbId(): string {
+  return import.meta.env.NOTION_BLOG_DB || process.env.NOTION_BLOG_DB || '';
+}
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -236,14 +256,16 @@ function escapeHtml(text: string): string {
  * Returns posts sorted by date descending.
  */
 export async function getPublishedPosts(): Promise<BlogPost[]> {
-  if (!BLOG_DB_ID || !import.meta.env.NOTION_TOKEN) {
-    console.warn('Notion blog credentials not configured. Returning empty blog posts.');
+  const blogDbId = getBlogDbId();
+  const token = getNotionToken();
+  if (!blogDbId || !token) {
+    console.warn('[IdeaBrief] Blog credentials not configured. DB:', blogDbId ? 'SET' : 'MISSING', 'Token:', token ? 'SET' : 'MISSING');
     return [];
   }
 
   try {
-    const response = await notion.databases.query({
-      database_id: BLOG_DB_ID,
+    const response = await getNotionClient().databases.query({
+      database_id: blogDbId,
       filter: {
         property: 'Published',
         checkbox: {
@@ -271,14 +293,16 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
  * Fetch a single blog post by slug, including its content as HTML.
  */
 export async function getPostBySlug(slug: string): Promise<BlogPostWithContent | null> {
-  if (!BLOG_DB_ID || !import.meta.env.NOTION_TOKEN) {
-    console.warn('Notion blog credentials not configured.');
+  const blogDbId = getBlogDbId();
+  const token = getNotionToken();
+  if (!blogDbId || !token) {
+    console.warn('[IdeaBrief] Blog credentials not configured.');
     return null;
   }
 
   try {
-    const response = await notion.databases.query({
-      database_id: BLOG_DB_ID,
+    const response = await getNotionClient().databases.query({
+      database_id: blogDbId,
       filter: {
         and: [
           {
@@ -305,8 +329,8 @@ export async function getPostBySlug(slug: string): Promise<BlogPostWithContent |
     const post = pageToPost(page);
 
     // Convert Notion blocks to markdown, then to HTML
-    const mdBlocks = await n2m.pageToMarkdown(page.id);
-    const mdString = n2m.toMarkdownString(mdBlocks);
+    const mdBlocks = await getN2M().pageToMarkdown(page.id);
+    const mdString = getN2M().toMarkdownString(mdBlocks);
     const content = markdownToHtml(mdString.parent);
 
     return {
@@ -335,19 +359,21 @@ export async function getAllPostSlugs(): Promise<string[]> {
  * Filters out ideas with "No-Go" verdict and "Passed" status.
  */
 export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
-  if (!IDEAS_DB_ID || !import.meta.env.NOTION_TOKEN) {
+  const ideasDbId = getIdeasDbId();
+  const token = getNotionToken();
+  if (!ideasDbId || !token) {
     console.warn('[IdeaBrief] Notion ideas credentials not configured.');
-    console.warn('[IdeaBrief] IDEAS_DB_ID:', IDEAS_DB_ID ? 'SET' : 'MISSING');
-    console.warn('[IdeaBrief] NOTION_TOKEN:', import.meta.env.NOTION_TOKEN ? 'SET' : 'MISSING');
+    console.warn('[IdeaBrief] IDEAS_DB_ID:', ideasDbId ? 'SET' : 'MISSING');
+    console.warn('[IdeaBrief] NOTION_TOKEN:', token ? 'SET' : 'MISSING');
     return [];
   }
 
-  console.log('[IdeaBrief] Fetching ideas from Notion DB:', IDEAS_DB_ID);
+  console.log('[IdeaBrief] Fetching ideas from Notion DB:', ideasDbId);
 
   try {
-    // First try a simple unfiltered query to verify access
-    const response = await notion.databases.query({
-      database_id: IDEAS_DB_ID,
+    // Simple unfiltered query to verify access
+    const response = await getNotionClient().databases.query({
+      database_id: ideasDbId,
       sorts: [
         {
           property: 'Opportunity Score',

@@ -397,3 +397,4 @@ export async function getFeaturedIdea(): Promise<ValidatedIdea | null> {
   const ideas = await getValidatedIdeas();
   return ideas.length > 0 ? ideas[0] : null;
 }
+// ISR cache bust 1773692923

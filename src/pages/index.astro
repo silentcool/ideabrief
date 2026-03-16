@@ -5,11 +5,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import IdeaCard from '../components/IdeaCard.astro';
 import PricingCard from '../components/PricingCard.astro';
 import VaultCard from '../components/VaultCard.astro';
-import { ensureNotionInit } from '../lib/notion-init';
-import { getValidatedIdeas, getFeaturedIdea } from '../lib/notion';
+import { initNotion, getValidatedIdeas, getFeaturedIdea } from '../lib/notion';
 
-// Initialize Notion with runtime env vars (import.meta.env only works here)
-ensureNotionInit();
+// Initialize Notion with runtime env vars (import.meta.env only resolves here in .astro frontmatter)
+initNotion({
+  token: import.meta.env.NOTION_TOKEN || '',
+  ideasDb: import.meta.env.NOTION_IDEAS_DB || '',
+  blogDb: import.meta.env.NOTION_BLOG_DB || '',
+});
 
 // Fetch ideas dynamically from Notion
 let allIdeas = await getValidatedIdeas();

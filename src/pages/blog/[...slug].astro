@@ -1,9 +1,12 @@
 ---
 import BlogPostLayout from '../../layouts/BlogPost.astro';
-import { ensureNotionInit } from '../../lib/notion-init';
-import { getPostBySlug } from '../../lib/notion';
+import { initNotion, getPostBySlug } from '../../lib/notion';
 
-ensureNotionInit();
+initNotion({
+  token: import.meta.env.NOTION_TOKEN || '',
+  ideasDb: import.meta.env.NOTION_IDEAS_DB || '',
+  blogDb: import.meta.env.NOTION_BLOG_DB || '',
+});
 const { slug } = Astro.params;
 
 if (!slug) {

@@ -84,53 +84,44 @@ export interface ValidatedIdea {
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-function getRichText(property: { type: string; rich_text?: RichTextItemResponse[] }): string {
-  if (property.type === 'rich_text' && property.rich_text) {
-    return property.rich_text.map((t) => t.plain_text).join('');
-  }
-  return '';
+// All helpers guard against undefined/null properties to prevent crashes
+// when a Notion property doesn't exist or has an unexpected name.
+
+function getRichText(property: any): string {
+  if (!property || property.type !== 'rich_text' || !property.rich_text) return '';
+  return property.rich_text.map((t: any) => t.plain_text).join('');
 }
 
-function getTitle(property: { type: string; title?: RichTextItemResponse[] }): string {
-  if (property.type === 'title' && property.title) {
-    return property.title.map((t) => t.plain_text).join('');
-  }
-  return '';
+function getTitle(property: any): string {
+  if (!property || property.type !== 'title' || !property.title) return '';
+  return property.title.map((t: any) => t.plain_text).join('');
 }
 
-function getCheckbox(property: { type: string; checkbox?: boolean }): boolean {
-  if (property.type === 'checkbox') {
-    return property.checkbox ?? false;
-  }
-  return false;
+function getCheckbox(property: any): boolean {
+  if (!property || property.type !== 'checkbox') return false;
+  return property.checkbox ?? false;
 }
 
-function getDate(property: { type: string; date?: { start: string } | null }): string {
-  if (property.type === 'date' && property.date) {
-    return property.date.start;
+function getDate(property: any): string {
+  if (!property || property.type !== 'date' || !property.date) {
+    return new Date().toISOString().split('T')[0];
   }
-  return new Date().toISOString().split('T')[0];
+  return property.date.start;
 }
 
-function getNumber(property: { type: string; number?: number | null }): number {
-  if (property.type === 'number' && property.number !== null && property.number !== undefined) {
-    return property.number;
-  }
-  return 0;
+function getNumber(property: any): number {
+  if (!property || property.type !== 'number' || property.number === null || property.number === undefined) return 0;
+  return property.number;
 }
 
-function getSelect(property: { type: string; select?: { name: string } | null }): string {
-  if (property.type === 'select' && property.select) {
-    return property.select.name;
-  }
-  return '';
+function getSelect(property: any): string {
+  if (!property || property.type !== 'select' || !property.select) return '';
+  return property.select.name;
 }
 
-function getMultiSelect(property: { type: string; multi_select?: { name: string }[] }): string[] {
-  if (property.type === 'multi_select' && property.multi_select) {
-    return property.multi_select.map((s) => s.name);
-  }
-  return [];
+function getMultiSelect(property: any): string[] {
+  if (!property || property.type !== 'multi_select' || !property.multi_select) return [];
+  return property.multi_select.map((s: any) => s.name);
 }
 
 function getCoverImage(page: PageObjectResponse): string | null {
@@ -167,13 +158,13 @@ function pageToPost(page: PageObjectResponse): BlogPost {
 
   return {
     id: page.id,
-    title: getTitle(props['Title'] as any),
-    slug: getRichText(props['Slug'] as any) || page.id.replace(/-/g, ''),
-    published: getCheckbox(props['Published'] as any),
-    date: getDate(props['Date'] as any),
-    description: getRichText(props['Description'] as any),
-    tags: getMultiSelect(props['Tags'] as any),
-    author: getRichText(props['Author'] as any) || 'IdeaBrief',
+    title: getTitle(props['Title']),
+    slug: getRichText(props['Slug']) || page.id.replace(/-/g, ''),
+    published: getCheckbox(props['Published']),
+    date: getDate(props['Date']),
+    description: getRichText(props['Description']),
+    tags: getMultiSelect(props['Tags']),
+    author: getRichText(props['Author']) || 'IdeaBrief',
     coverImage: getCoverImage(page),
   };
 }
@@ -183,16 +174,16 @@ function pageToIdea(page: PageObjectResponse): ValidatedIdea {
 
   return {
     id: page.id,
-    name: getTitle(props['Idea Name'] as any),
-    industry: getSelect(props['Industry'] as any),
-    score: getNumber(props['Opportunity Score'] as any),
-    verdict: getSelect(props['Verdict'] as any),
-    pitch: getRichText(props['60-Second Pitch'] as any),
-    tam: getRichText(props['TAM'] as any),
-    mvpCost: getRichText(props['MVP Build Cost'] as any),
-    breakEvenCustomers: getRichText(props['Break-Even Customers'] as any),
-    status: getSelect(props['Status'] as any),
-    dateGenerated: getDate(props['Date Generated'] as any),
+    name: getTitle(props['Idea Name']),
+    industry: getSelect(props['Industry']),
+    score: getNumber(props['Opportunity Score']),
+    verdict: getSelect(props['Verdict']),
+    pitch: getRichText(props['60-Second Pitch']),
+    tam: getRichText(props['TAM']),
+    mvpCost: getRichText(props['MVP Build Cost']),
+    breakEvenCustomers: getRichText(props['Break-Even Customers']),
+    status: getSelect(props['Status']),
+    dateGenerated: getDate(props['Date Generated']),
   };
 }
 

@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { Client } from '@notionhq/client';
-import { initNotion } from '../../lib/notion';
+import { initNotion, getValidatedIdeas as getIdeas } from '../../lib/notion';
 
 export const GET: APIRoute = async () => {
   const diagnostics: Record<string, any> = {
@@ -97,13 +97,17 @@ export const GET: APIRoute = async () => {
     }
     
     // Now actually call the notion.ts function
-    initNotion({
-      token: import.meta.env.NOTION_TOKEN || '',
-      ideasDb: import.meta.env.NOTION_IDEAS_DB || '',
-      blogDb: import.meta.env.NOTION_BLOG_DB || '',
-    });
-    const { getValidatedIdeas } = await import('../../lib/notion');
-    const ideas = await getValidatedIdeas();
+    const initToken = import.meta.env.NOTION_TOKEN || '';
+    const initDb = import.meta.env.NOTION_IDEAS_DB || '';
+    const initBlog = import.meta.env.NOTION_BLOG_DB || '';
+    diagnostics.init_values = {
+      token: initToken ? `SET(${initToken.substring(0, 8)}...)` : 'EMPTY',
+      ideasDb: initDb || 'EMPTY',
+      blogDb: initBlog || 'EMPTY',
+      typeof_token: typeof import.meta.env.NOTION_TOKEN,
+    };
+    initNotion({ token: initToken, ideasDb: initDb, blogDb: initBlog });
+    const ideas = await getIdeas();
     diagnostics.notion_ts_result = {
       count: ideas.length,
       first_three: ideas.slice(0, 3).map(i => ({ name: i.name, score: i.score, verdict: i.verdict })),

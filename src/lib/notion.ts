@@ -24,6 +24,9 @@ export function initNotion(config: { token: string; ideasDb: string; blogDb: str
   // Reset clients so they pick up new config
   _notion = null;
   _n2m = null;
+  console.log('[IdeaBrief:initNotion] token:', config.token ? `SET(${config.token.substring(0, 8)}...)` : 'EMPTY');
+  console.log('[IdeaBrief:initNotion] ideasDb:', config.ideasDb || 'EMPTY');
+  console.log('[IdeaBrief:initNotion] blogDb:', config.blogDb || 'EMPTY');
 }
 
 function getConfig() {

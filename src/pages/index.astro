@@ -1,5 +1,5 @@
 ---
-export const prerender = false; // Always render fresh, don't ISR cache this page
+export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import IdeaCard from '../components/IdeaCard.astro';
@@ -8,16 +8,8 @@ import VaultCard from '../components/VaultCard.astro';
 import { getValidatedIdeas, getFeaturedIdea } from '../lib/notion';
 
 // Fetch ideas dynamically from Notion
-let allIdeas = [];
-let featuredIdea = null;
-let debugInfo = '';
-try {
-  allIdeas = await getValidatedIdeas();
-  featuredIdea = await getFeaturedIdea();
-  debugInfo = `OK: ${allIdeas.length} ideas loaded`;
-} catch (err: any) {
-  debugInfo = `ERROR: ${err?.code} ${err?.message} ${err?.status}`;
-}
+let allIdeas = await getValidatedIdeas();
+let featuredIdea = await getFeaturedIdea();
 
 // Vault shows all ideas except the featured one (avoid duplication)
 const vaultIdeas = featuredIdea
@@ -242,7 +234,7 @@ const jsonLd = {
     </div>
 
     <p class="vault-note">New idea every weekday. <strong>{ideaCount > 0 ? `${ideaCount} ideas and counting` : '250+ ideas per year'}</strong>.</p>
-    <div data-debug={debugInfo} style="display:none;"></div>
+
   </div>
 </section>
 

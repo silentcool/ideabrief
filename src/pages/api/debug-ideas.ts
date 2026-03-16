@@ -4,120 +4,106 @@ import { Client } from '@notionhq/client';
 export const GET: APIRoute = async () => {
   const diagnostics: Record<string, any> = {
     timestamp: new Date().toISOString(),
-    tests: {},
   };
 
-  // Test 1: Check env vars via import.meta.env
-  const metaToken = import.meta.env.NOTION_TOKEN || '';
-  const metaDb = import.meta.env.NOTION_IDEAS_DB || '';
-  
-  // Test 2: Check env vars via process.env
-  const procToken = process.env.NOTION_TOKEN || '';
-  const procDb = process.env.NOTION_IDEAS_DB || '';
-  
-  diagnostics.env = {
-    meta_token: metaToken ? `SET(${metaToken.substring(0, 8)}...)` : 'MISSING',
-    meta_db: metaDb || 'MISSING',
-    proc_token: procToken ? `SET(${procToken.substring(0, 8)}...)` : 'MISSING',
-    proc_db: procDb || 'MISSING',
-    fallback_token: (metaToken || procToken) ? 'OK' : 'BOTH_MISSING',
-    fallback_db: (metaDb || procDb) ? 'OK' : 'BOTH_MISSING',
-  };
-
-  const token = metaToken || procToken;
-  const dbId = metaDb || procDb;
+  const token = import.meta.env.NOTION_TOKEN || process.env.NOTION_TOKEN || '';
+  const dbId = import.meta.env.NOTION_IDEAS_DB || process.env.NOTION_IDEAS_DB || '';
 
   if (!token || !dbId) {
-    diagnostics.tests.skip = 'Missing credentials';
+    diagnostics.error = 'Missing credentials';
     return new Response(JSON.stringify(diagnostics, null, 2), {
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // Test 3: Direct query (no sort, no filter) — baseline
-  try {
-    const client = new Client({ auth: token });
-    const resp = await client.databases.query({
-      database_id: dbId,
-      page_size: 5,
-    });
-    diagnostics.tests.bare_query = {
-      status: 'OK',
-      count: resp.results.length,
-      has_more: resp.has_more,
-      first_page_props: resp.results.length > 0 
-        ? Object.keys((resp.results[0] as any).properties || {})
-        : [],
-    };
-  } catch (e: any) {
-    diagnostics.tests.bare_query = { status: 'ERROR', code: e?.code, message: e?.message };
+  // Test 1: Raw Notion API - get first page's full property structure
+  const client = new Client({ auth: token });
+  const resp = await client.databases.query({
+    database_id: dbId,
+    page_size: 1,
+    sorts: [{ property: 'Opportunity Score', direction: 'descending' }],
+  });
+
+  if (resp.results.length > 0) {
+    const page = resp.results[0] as any;
+    const props = page.properties;
+    
+    // Show each property's type and value structure
+    const propDetail: Record<string, any> = {};
+    for (const [key, val] of Object.entries(props as Record<string, any>)) {
+      propDetail[key] = {
+        type: val.type,
+        value_preview: JSON.stringify(val).substring(0, 200),
+      };
+    }
+    diagnostics.first_page_properties = propDetail;
+    diagnostics.first_page_id = page.id;
   }
 
-  // Test 4: Query with sort (matching notion.ts)
+  // Test 2: Call notion.ts getValidatedIdeas with extra logging
   try {
-    const client = new Client({ auth: token });
-    const resp = await client.databases.query({
+    // Reproduce exactly what notion.ts does but with diagnostics
+    const resp2 = await client.databases.query({
       database_id: dbId,
       sorts: [{ property: 'Opportunity Score', direction: 'descending' }],
     });
-    diagnostics.tests.sorted_query = {
-      status: 'OK',
-      count: resp.results.length,
-    };
     
-    // Map first 3 results the same way notion.ts does
-    const mapped = resp.results.slice(0, 3).map((page: any) => {
+    diagnostics.raw_count = resp2.results.length;
+    
+    // Check 'properties' in page filter
+    const withProps = resp2.results.filter((p: any) => 'properties' in p);
+    diagnostics.with_properties_count = withProps.length;
+    
+    // Now check what pageToIdea equivalent gives us
+    if (withProps.length > 0) {
+      const page = withProps[0] as any;
       const props = page.properties;
-      return {
-        name: props['Idea Name']?.title?.map((t: any) => t.plain_text).join('') || '(empty)',
-        score: props['Opportunity Score']?.number ?? '(null)',
-        verdict: props['Verdict']?.select?.name || '(empty)',
-        industry: props['Industry']?.select?.name || '(empty)',
-        status: props['Status']?.select?.name || '(empty)',
-        pitch_len: (props['60-Second Pitch']?.rich_text?.map((t: any) => t.plain_text).join('') || '').length,
+      
+      // Check each property access that pageToIdea uses
+      diagnostics.property_access = {
+        'Idea Name': {
+          exists: 'Idea Name' in props,
+          type: props['Idea Name']?.type,
+          title_array: props['Idea Name']?.title?.length,
+          value: props['Idea Name']?.title?.map((t: any) => t.plain_text).join(''),
+        },
+        'Opportunity Score': {
+          exists: 'Opportunity Score' in props,
+          type: props['Opportunity Score']?.type,
+          number: props['Opportunity Score']?.number,
+        },
+        'Industry': {
+          exists: 'Industry' in props,
+          type: props['Industry']?.type,
+          select: props['Industry']?.select?.name,
+        },
+        'Verdict': {
+          exists: 'Verdict' in props,
+          type: props['Verdict']?.type,
+          select: props['Verdict']?.select?.name,
+        },
+        'Status': {
+          exists: 'Status' in props,
+          type: props['Status']?.type,
+          select: props['Status']?.select?.name,
+        },
+        'Date Generated': {
+          exists: 'Date Generated' in props,
+          type: props['Date Generated']?.type,
+          date: props['Date Generated']?.date,
+        },
       };
-    });
-    diagnostics.tests.sorted_mapped = mapped;
+    }
     
-    // Apply the same filters as notion.ts
-    const filtered = resp.results
-      .filter((p: any) => 'properties' in p)
-      .map((page: any) => {
-        const props = page.properties;
-        const name = props['Idea Name']?.title?.map((t: any) => t.plain_text).join('') || '';
-        const score = props['Opportunity Score']?.number || 0;
-        const verdict = props['Verdict']?.select?.name || '';
-        const status = props['Status']?.select?.name || '';
-        return { name, score, verdict, status };
-      });
-    
-    diagnostics.tests.pre_filter = filtered.map(f => ({
-      name: f.name,
-      score: f.score,
-      verdict: f.verdict,
-      status: f.status,
-      would_pass: f.name !== '' && f.name !== 'InvoiceScan' && f.verdict !== 'No-Go' && f.status !== 'Passed' && f.score > 0,
-    }));
-    
-    const afterFilter = filtered.filter(f => 
-      f.name && f.name !== 'InvoiceScan' && f.verdict !== 'No-Go' && f.status !== 'Passed' && f.score > 0
-    );
-    diagnostics.tests.after_filter_count = afterFilter.length;
-  } catch (e: any) {
-    diagnostics.tests.sorted_query = { status: 'ERROR', code: e?.code, message: e?.message };
-  }
-
-  // Test 5: Call getValidatedIdeas from notion.ts
-  try {
+    // Now actually call the notion.ts function
     const { getValidatedIdeas } = await import('../../lib/notion');
     const ideas = await getValidatedIdeas();
-    diagnostics.tests.notion_ts_call = {
-      status: 'OK',
+    diagnostics.notion_ts_result = {
       count: ideas.length,
-      first: ideas.length > 0 ? { name: ideas[0].name, score: ideas[0].score } : null,
+      first_three: ideas.slice(0, 3).map(i => ({ name: i.name, score: i.score, verdict: i.verdict })),
     };
   } catch (e: any) {
-    diagnostics.tests.notion_ts_call = { status: 'ERROR', code: e?.code, message: e?.message, stack: e?.stack?.split('\n').slice(0, 3) };
+    diagnostics.error = { code: e?.code, message: e?.message, stack: e?.stack?.split('\n').slice(0, 5) };
   }
 
   return new Response(JSON.stringify(diagnostics, null, 2), {

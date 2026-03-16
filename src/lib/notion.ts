@@ -10,7 +10,10 @@ let _notion: Client | null = null;
 let _n2m: NotionToMarkdown | null = null;
 
 function getNotionToken(): string {
-  return import.meta.env.NOTION_TOKEN || process.env.NOTION_TOKEN || '';
+  // IMPORTANT: Use process.env (not import.meta.env) in library modules.
+  // import.meta.env is statically replaced at build time by Vite/Astro,
+  // so it becomes undefined for runtime-only env vars like NOTION_TOKEN.
+  return process.env.NOTION_TOKEN || '';
 }
 
 function getNotionClient(): Client {
@@ -29,11 +32,11 @@ function getN2M(): NotionToMarkdown {
 
 // Database IDs from environment (lazy)
 function getIdeasDbId(): string {
-  return import.meta.env.NOTION_IDEAS_DB || process.env.NOTION_IDEAS_DB || '';
+  return process.env.NOTION_IDEAS_DB || '';
 }
 
 function getBlogDbId(): string {
-  return import.meta.env.NOTION_BLOG_DB || process.env.NOTION_BLOG_DB || '';
+  return process.env.NOTION_BLOG_DB || '';
 }
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -388,8 +391,8 @@ export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
       .filter((page): page is PageObjectResponse => 'properties' in page)
       .map(pageToIdea)
       .filter((idea) => {
-        // Exclude InvoiceScan
-        if (idea.name === 'InvoiceScan') return false;
+        // Exclude InvoiceScan (match partial name since full name includes subtitle)
+        if (idea.name.toLowerCase().includes('invoicescan')) return false;
         // Exclude No-Go verdicts
         if (idea.verdict === 'No-Go') return false;
         // Exclude Passed status

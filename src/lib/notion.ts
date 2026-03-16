@@ -5,20 +5,37 @@ import type {
   RichTextItemResponse,
 } from '@notionhq/client/build/src/api-endpoints';
 
-// Lazy-initialized Notion client — env vars may not be available at module load time
+// ── Config ──────────────────────────────────────────────────────────
+// Env vars must be passed in from Astro pages/API routes where
+// import.meta.env is resolved at runtime. Vite statically replaces
+// import.meta.env and process.env during bundling, making them
+// unavailable in library modules at runtime.
+
+let _config: { token: string; ideasDb: string; blogDb: string } | null = null;
 let _notion: Client | null = null;
 let _n2m: NotionToMarkdown | null = null;
 
-function getNotionToken(): string {
-  // IMPORTANT: Use process.env (not import.meta.env) in library modules.
-  // import.meta.env is statically replaced at build time by Vite/Astro,
-  // so it becomes undefined for runtime-only env vars like NOTION_TOKEN.
-  return process.env.NOTION_TOKEN || '';
+/**
+ * Initialize the Notion config. Must be called once from an Astro page
+ * or API route before using any other functions.
+ */
+export function initNotion(config: { token: string; ideasDb: string; blogDb: string }) {
+  _config = config;
+  // Reset clients so they pick up new config
+  _notion = null;
+  _n2m = null;
+}
+
+function getConfig() {
+  if (!_config) {
+    throw new Error('[IdeaBrief] Notion not initialized. Call initNotion() first.');
+  }
+  return _config;
 }
 
 function getNotionClient(): Client {
   if (!_notion) {
-    _notion = new Client({ auth: getNotionToken() });
+    _notion = new Client({ auth: getConfig().token });
   }
   return _notion;
 }
@@ -28,15 +45,6 @@ function getN2M(): NotionToMarkdown {
     _n2m = new NotionToMarkdown({ notionClient: getNotionClient() });
   }
   return _n2m;
-}
-
-// Database IDs from environment (lazy)
-function getIdeasDbId(): string {
-  return process.env.NOTION_IDEAS_DB || '';
-}
-
-function getBlogDbId(): string {
-  return process.env.NOTION_BLOG_DB || '';
 }
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -259,8 +267,7 @@ function escapeHtml(text: string): string {
  * Returns posts sorted by date descending.
  */
 export async function getPublishedPosts(): Promise<BlogPost[]> {
-  const blogDbId = getBlogDbId();
-  const token = getNotionToken();
+  const { blogDb: blogDbId, token } = getConfig();
   if (!blogDbId || !token) {
     console.warn('[IdeaBrief] Blog credentials not configured. DB:', blogDbId ? 'SET' : 'MISSING', 'Token:', token ? 'SET' : 'MISSING');
     return [];
@@ -296,8 +303,7 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
  * Fetch a single blog post by slug, including its content as HTML.
  */
 export async function getPostBySlug(slug: string): Promise<BlogPostWithContent | null> {
-  const blogDbId = getBlogDbId();
-  const token = getNotionToken();
+  const { blogDb: blogDbId, token } = getConfig();
   if (!blogDbId || !token) {
     console.warn('[IdeaBrief] Blog credentials not configured.');
     return null;
@@ -362,8 +368,7 @@ export async function getAllPostSlugs(): Promise<string[]> {
  * Filters out ideas with "No-Go" verdict and "Passed" status.
  */
 export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
-  const ideasDbId = getIdeasDbId();
-  const token = getNotionToken();
+  const { ideasDb: ideasDbId, token } = getConfig();
   if (!ideasDbId || !token) {
     console.warn('[IdeaBrief] Notion ideas credentials not configured.');
     console.warn('[IdeaBrief] IDEAS_DB_ID:', ideasDbId ? 'SET' : 'MISSING');
@@ -426,4 +431,3 @@ export async function getFeaturedIdea(): Promise<ValidatedIdea | null> {
   const ideas = await getValidatedIdeas();
   return ideas.length > 0 ? ideas[0] : null;
 }
-// ISR cache bust 1773692923

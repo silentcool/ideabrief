@@ -5,7 +5,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import IdeaCard from '../components/IdeaCard.astro';
 import PricingCard from '../components/PricingCard.astro';
 import VaultCard from '../components/VaultCard.astro';
+import { ensureNotionInit } from '../lib/notion-init';
 import { getValidatedIdeas, getFeaturedIdea } from '../lib/notion';
+
+// Initialize Notion with runtime env vars (import.meta.env only works here)
+ensureNotionInit();
 
 // Fetch ideas dynamically from Notion
 let allIdeas = await getValidatedIdeas();

@@ -1,8 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BlogCard from '../../components/BlogCard.astro';
+import { ensureNotionInit } from '../../lib/notion-init';
 import { getPublishedPosts } from '../../lib/notion';
 
+ensureNotionInit();
 const posts = await getPublishedPosts();
 
 const jsonLd = {

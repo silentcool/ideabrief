@@ -1,7 +1,9 @@
 ---
 import BlogPostLayout from '../../layouts/BlogPost.astro';
+import { ensureNotionInit } from '../../lib/notion-init';
 import { getPostBySlug } from '../../lib/notion';
 
+ensureNotionInit();
 const { slug } = Astro.params;
 
 if (!slug) {

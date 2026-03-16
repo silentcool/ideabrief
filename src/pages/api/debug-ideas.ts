@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { Client } from '@notionhq/client';
+import { ensureNotionInit } from '../../lib/notion-init';
 
 export const GET: APIRoute = async () => {
   const diagnostics: Record<string, any> = {
@@ -96,6 +97,7 @@ export const GET: APIRoute = async () => {
     }
     
     // Now actually call the notion.ts function
+    ensureNotionInit();
     const { getValidatedIdeas } = await import('../../lib/notion');
     const ideas = await getValidatedIdeas();
     diagnostics.notion_ts_result = {

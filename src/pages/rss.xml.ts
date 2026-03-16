@@ -1,8 +1,10 @@
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
+import { ensureNotionInit } from '../lib/notion-init';
 import { getPublishedPosts } from '../lib/notion';
 
 export async function GET(context: APIContext) {
+  ensureNotionInit();
   const posts = await getPublishedPosts();
 
   return rss({

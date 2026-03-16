@@ -24,9 +24,6 @@ export function initNotion(config: { token: string; ideasDb: string; blogDb: str
   // Reset clients so they pick up new config
   _notion = null;
   _n2m = null;
-  console.log('[IdeaBrief:initNotion] token:', config.token ? `SET(${config.token.substring(0, 8)}...)` : 'EMPTY');
-  console.log('[IdeaBrief:initNotion] ideasDb:', config.ideasDb || 'EMPTY');
-  console.log('[IdeaBrief:initNotion] blogDb:', config.blogDb || 'EMPTY');
 }
 
 function getConfig() {
@@ -364,16 +361,11 @@ export async function getAllPostSlugs(): Promise<string[]> {
 export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
   const { ideasDb: ideasDbId, token } = getConfig();
   if (!ideasDbId || !token) {
-    console.warn('[IdeaBrief] Notion ideas credentials not configured.');
-    console.warn('[IdeaBrief] IDEAS_DB_ID:', ideasDbId ? 'SET' : 'MISSING');
-    console.warn('[IdeaBrief] NOTION_TOKEN:', token ? 'SET' : 'MISSING');
+    console.warn('[IdeaBrief] Ideas credentials not configured');
     return [];
   }
 
-  console.log('[IdeaBrief] Fetching ideas from Notion DB:', ideasDbId);
-
   try {
-    // Simple unfiltered query to verify access
     const response = await getNotionClient().databases.query({
       database_id: ideasDbId,
       sorts: [
@@ -384,36 +376,19 @@ export async function getValidatedIdeas(): Promise<ValidatedIdea[]> {
       ],
     });
 
-    console.log('[IdeaBrief] Notion returned', response.results.length, 'raw results');
-
-    const ideas = response.results
+    return response.results
       .filter((page): page is PageObjectResponse => 'properties' in page)
       .map(pageToIdea)
       .filter((idea) => {
-        // Exclude InvoiceScan (match partial name since full name includes subtitle)
         if (idea.name.toLowerCase().includes('invoicescan')) return false;
-        // Exclude No-Go verdicts
         if (idea.verdict === 'No-Go') return false;
-        // Exclude Passed status
         if (idea.status === 'Passed') return false;
-        // Must have a score
         if (!idea.score || idea.score === 0) return false;
-        // Must have a name
         if (!idea.name) return false;
         return true;
       });
-
-    console.log('[IdeaBrief] After filtering:', ideas.length, 'ideas');
-    if (ideas.length > 0) {
-      console.log('[IdeaBrief] First idea:', ideas[0].name, '- Score:', ideas[0].score);
-    }
-    return ideas;
   } catch (error: any) {
-    console.error('[IdeaBrief] Error fetching ideas from Notion.');
-    console.error('[IdeaBrief] Error code:', error?.code);
-    console.error('[IdeaBrief] Error message:', error?.message);
-    console.error('[IdeaBrief] Error status:', error?.status);
-    console.error('[IdeaBrief] Full error:', JSON.stringify(error, null, 2));
+    console.error('[IdeaBrief] Error fetching ideas:', error?.message);
     return [];
   }
 }
